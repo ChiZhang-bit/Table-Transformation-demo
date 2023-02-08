@@ -1,1 +1,1 @@
-from . import Insights
+from .Insights import *
