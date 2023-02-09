@@ -14,6 +14,8 @@ if __name__ == "__main__":
 
     table = revision_index(table)
 
+    print(table)
+
     tableinsight = TableInsight(table, table_name)
 
     tableinsight.single_outlier(1, 2)
