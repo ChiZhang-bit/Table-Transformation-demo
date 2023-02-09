@@ -50,6 +50,7 @@ class TableInsight(object):
         # Step2: 根据层次找到与其相关的单元格，先找LEFT，再找TOP，
         # 顺序如下： 左侧表头1-n, 顶侧表头1-m
         related_data = self._single_related_data(row, column)
+
         # Step3: 根据不同的数据列使用异常值评估方法来量化异常度
         # 这里使用 1.5IQR Rule & three_sigma 来判断异常值
         outliers = []
@@ -62,13 +63,13 @@ class TableInsight(object):
         # Step4: 根据outliers中最大的位置的下标返回变换规则
         # print(outliers)
         if max(outliers) == 0:
-            print("No related outlier!")
+            print("No outlier!")
         else:
             outlier_index = outliers.index(max(outliers))
             if outlier_index <= self.left_level - 1:
-                print(f"将左侧的第{outlier_index}层移到最右层")
+                print(f"Outlier:将左侧的第{outlier_index}层移到最右层")
             else:
-                print(f"将顶部的第{outlier_index - self.left_level}层移到最下层")
+                print(f"Outlier:将顶部的第{outlier_index - self.left_level}层移到最下层")
 
     def single_trend(self, row: int, column: int):
         """
@@ -91,18 +92,53 @@ class TableInsight(object):
 
         # Step3: 根据相关系数>=0.8 (强相关的判定)，判断数据趋势的变换是否明显
         max_trend = sorted(trends, key=lambda x: x[-1], reverse=True)[0]
-        print(trends)
         if max_trend[-1] >= 0.8:
             trends_index = trends.index(max_trend)
             if trends_index <= self.left_level - 1:
-                print(f"将左侧的第{trends_index}层移到最右层，之后转置")
+                print(f"Trend:将左侧的第{trends_index}层移到最右层，之后转置")
             else:
-                print(f"将顶部的第{trends_index - self.left_level}层移到最下层")
+                print(f"Trend:将顶部的第{trends_index - self.left_level}层移到最下层")
         else:
             print("No obvious trends!")
 
-    def max_min_imum(self):
+    def max_min_imum(self, row: int, column: int):
         """
         判断cell value是否是一系列值中的最大值/最小值
         :return:
         """
+        # Step1: find current cell location
+        cell_value = self.table.iloc[row, column]
+
+        # Step2: 根据层次找到与其相关的单元格，先找LEFT，再找TOP，
+        # 顺序如下： 左侧表头1-n, 顶侧表头1-m
+        related_data = self._single_related_data(row, column)
+
+        # Step3: 根据不同的数据列判断cell value是否是最大值/最小值
+        max_min_list = []
+        for i, data_item in enumerate(related_data):
+            if len(data_item) < 4:
+                continue
+            temp_list = sorted(data_item)
+            if temp_list[0] == cell_value:
+                max_min_list.append((i, cell_value - temp_list[1]))
+            if temp_list[-1] == cell_value:
+                max_min_list.append((i, cell_value - temp_list[-2]))
+
+        # Step4: 选取尽可能大/尽可能小的值来处理
+        if len(max_min_list) > 0:
+            max_min_list.sort(key=lambda x:abs(x[-1]), reverse=True)
+            if max_min_list[0][1] <= 0:
+                print(f"是最小值，比第二小少{-max_min_list[0][1]}")
+            else:
+                print(f"是最大值，比第二大大{max_min_list[0][1]}")
+            max_min_index = max_min_list[0][0]
+            if max_min_index <= self.left_level - 1:
+                print(f"Max&minimum:将左侧的第{max_min_index}层移到最右层，之后转置")
+            else:
+                print(f"Max&minimum:将顶部的第{max_min_index - self.left_level}层移到最下层")
+        else:
+            print("Not any max/min!")
+
+
+
+

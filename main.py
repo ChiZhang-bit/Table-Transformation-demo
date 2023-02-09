@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     tableinsight.single_outlier(1, 2)
     tableinsight.single_trend(1, 2)
-
+    tableinsight.max_min_imum(1, 2)
     # print(table.index)
     # print(table.keys())
     # print(table)
