@@ -19,6 +19,7 @@ if __name__ == "__main__":
     tableinsight = TableInsight(table, table_name)
 
     tableinsight.single_outlier(1, 2)
+    tableinsight.single_trend(1, 2)
 
     # print(table.index)
     # print(table.keys())
