@@ -1,3 +1,5 @@
+import numpy as np
+
 from DataInsight.utils import *
 
 
@@ -28,17 +30,27 @@ class TableInsight(object):
         print(top_location)
         cell_value = self.table.iloc[row, column]
 
-        # Step2: 根据层次找到与其相关的单元格，先找LEFT，再找TOP
+        # Step2: 根据层次找到与其相关的单元格，先找LEFT，再找TOP，并记录顺序
+        transformation_order = []
         data = self.table[top_location]
+        print(data)
+        # for i in range(self.left_level):
+        #     data.xs(left_location[i])
         related_data = [data.xs(left_location[i], level=i, axis=0)
                         for i in range(self.left_level)]
         data = self.table.loc[left_location]
         related_data.extend([data.xs(top_location[i], level=i)
                              for i in range(self.top_level)])
-
+        print(related_data)
         # Step3: 根据不同的数据列使用异常值评估方法来量化异常度
-        # 这里使用1.5IQR Rule来判断异常值
+        # 这里使用 1.5IQR Rule & three_sigma 来判断异常值
 
         for i in related_data:
-            print(iqr_rule(i, cell_value))
-            print(three_sigma(i, cell_value))
+            if len(i) >= 20:
+                outliers = three_sigma(i, cell_value)
+            else:
+                outliers = iqr_rule(i, cell_value)
+
+        # Step4:
+
+

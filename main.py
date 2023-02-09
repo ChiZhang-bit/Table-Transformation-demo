@@ -7,10 +7,10 @@ from utils import *
 from DataInsight import *
 
 if __name__ == "__main__":
-    table_name = "Hierachical Table.xlsx"
+    table_name = "Hierachical Table2.xlsx"
     table = pd.read_excel(os.path.join("asset", table_name),
                           header=[0, 1],
-                          index_col=[0, 1])
+                          index_col=[0, 1, 2])
 
     table = revision_index(table)
 
