@@ -266,3 +266,4 @@ class TableInsight(object):
                 print(f"Block Trend:将顶部的第{trends_index - self.left_level}层移到左侧，其余所有都移到上层")
         else:
             print("No obvious block trends!")
+
