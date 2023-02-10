@@ -23,5 +23,6 @@ def revision_index(hierarchi_table: pd.DataFrame):
             temp = i
             revision_index.append(i)
     hierarchi_table.index = pd.MultiIndex.from_tuples(revision_index)
-    hierarchi_table.index.names = range(len(revision_index[0]))
+    hierarchi_table.index.names = range(len(hierarchi_table.index[0]))
+    hierarchi_table.columns.names = range(len(hierarchi_table.columns[0]))
     return hierarchi_table

@@ -18,11 +18,17 @@ if __name__ == "__main__":
 
     tableinsight = TableInsight(table, table_name)
 
+    tableinsight.index_to_column(reverse=True)
+
     tableinsight.single_outlier(1, 2)
     tableinsight.single_trend(1, 2)
-    tableinsight.max_min_imum(1, 2)
+    tableinsight.single_max_min_imum(1, 2)
     # print(table.index)
     # print(table.keys())
     # print(table)
     # print(table["Spring"].loc['WuHan Estar']['KDA'])
     # print(table[2018]["Spring"].loc['ChongQing Wolves'])
+
+    rows = [0, 1, 2, 3, 4, 5, 6, 7]
+    columns = [0, 1, 2, 3]
+    tableinsight.block_trend(rows, columns)
