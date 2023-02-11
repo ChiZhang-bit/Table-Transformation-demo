@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     tableinsight = TableInsight(table, table_name)
 
-    tableinsight.index_to_column(reverse=True)
+    # tableinsight.index_to_column(reverse=True)
 
     tableinsight.single_outlier(1, 2)
     tableinsight.single_trend(1, 2)

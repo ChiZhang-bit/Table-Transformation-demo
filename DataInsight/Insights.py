@@ -13,12 +13,7 @@ class TableInsight(object):
         self.top_level = len(self.top_header[0])
         self.left_level = len(self.left_header[0])
 
-    def __str__(self):
-        return f"The table_id is {self.table_id}\n" \
-               f"The table top_header is {self.top_header}, level:{self.top_level}\n" \
-               f"The table left_header is {self.left_header}, level:{self.left_level}\n" \
-               f"The table is {self.table}"
-
+    # Table Transformation Functions
     def _update(self):
         self.top_header = self.table.keys()
         self.left_header = self.table.index
@@ -67,6 +62,17 @@ class TableInsight(object):
             self.table = self.table.stack()
         self._update()
 
+    # Auto Merge Table Blocks Functions
+    def merge_transformation(self, rows: list, columns: list):
+        """
+        更加自由的判断能否用来合并不相关的单元格
+        :param rows: 第几行？
+        :param columns: 第几列？
+        :return:
+        """
+
+
+    # Data Insight Analytic Functions
     def _get_single_cell_value(self, row: int, column: int):
         return self.table.iloc[row, column]
 
@@ -267,3 +273,8 @@ class TableInsight(object):
         else:
             print("No obvious block trends!")
 
+    def __str__(self):
+        return f"The table_id is {self.table_id}\n" \
+               f"The table top_header is {self.top_header}, level:{self.top_level}\n" \
+               f"The table left_header is {self.left_header}, level:{self.left_level}\n" \
+               f"The table is {self.table}"
