@@ -71,7 +71,6 @@ class TableInsight(object):
         :return:
         """
 
-
     # Data Insight Analytic Functions
     def _get_single_cell_value(self, row: int, column: int):
         return self.table.iloc[row, column]
