@@ -13,6 +13,31 @@ class TableInsight(object):
         self.top_level = len(self.top_header[0])
         self.left_level = len(self.left_header[0])
 
+    def data_location(self, left_loc: list, top_loc: list):
+        """
+        left_loc = [*, * , name] 筛选出数据区域
+        :param left_loc:
+        :param top_loc:
+        :return:
+        """
+        data = self.table
+        for i in range(len(left_loc)):
+            if left_loc[i] == '*':
+                continue
+            try:
+                data = data.xs(key=left_loc[i], axis=0, level=i, drop_level=False)
+            except KeyError:
+                print("The key is error")
+
+        for i in range(len(top_loc)):
+            if top_loc[i] == "*":
+                continue
+            try:
+                data = data.xs(key=top_loc[i], axis=1, level=i, drop_level=False)
+            except KeyError:
+                print("The key is error")
+        return data
+
     # Table Transformation Functions
     def _update(self):
         self.top_header = self.table.keys()
@@ -81,21 +106,20 @@ class TableInsight(object):
     def _single_related_data(self, row: int, column: int):
         left_location = self.left_header[row]
         top_location = self.top_header[column]
-        # print(f"left_location: {left_location}")
-        # print(f"top_location: {top_location}")
         related_data = []
         for i in range(self.left_level):
             data = self.table[top_location]
             for j in range(self.left_level):
                 if i != j:
-                    data = data.xs(left_location[j], level=j, axis=0)
+                    data = data.xs(left_location[j], level=j, axis=0, drop_level=False)
             related_data.append(data)
 
         for i in range(self.top_level):
             data = self.table.loc[left_location]
             for j in range(self.top_level):
                 if i != j:
-                    data = data.xs(top_location[j], level=j, axis=0)
+                    print(data)
+                    data = data.xs(top_location[j], level=j, axis=0, drop_level=False)
             related_data.append(data)
         return related_data
 

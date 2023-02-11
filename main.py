@@ -14,11 +14,13 @@ if __name__ == "__main__":
 
     table = revision_index(table)
 
-    print(table)
-
     tableinsight = TableInsight(table, table_name)
-
+    # print(tableinsight.table)
     # tableinsight.index_to_column(reverse=True)
+    # print(tableinsight.table)
+
+    left_loc = ["ChongQing Wolves", "*", "*"]
+    top_loc = ["*", "Spring"]
 
     tableinsight.single_outlier(1, 2)
     tableinsight.single_trend(1, 2)
