@@ -20,11 +20,12 @@ if __name__ == "__main__":
     # tableinsight.transform_top(0, 1)
     # print(tableinsight.table)
 
-    left_loc = ["ChongQing Wolves", "*", "KDA"]
-    top_loc = ["*", "Spring"]
+    left_loc = ["ChongQing Wolves", "Mid", "KDA"]
+    top_loc = [2018, "Spring"]
     # print(tableinsight.data_location(left_loc, []))
-    tableinsight.merge_transformation_by_headers(left_loc, top_loc)
-    print(tableinsight.table)
+    # tableinsight.merge_transformation_by_headers(left_loc, top_loc)
+    # print(tableinsight.table)
+    # tableinsight.explortory_tree(left_loc, top_loc)
     input()
 
     tableinsight.single_outlier(1, 2)

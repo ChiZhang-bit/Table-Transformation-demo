@@ -343,3 +343,22 @@ class TableInsight(object):
                f"The table top_header is {self.top_header}, level:{self.top_level}\n" \
                f"The table left_header is {self.left_header}, level:{self.left_level}\n" \
                f"The table is {self.table}"
+
+    def explortory_tree(self, initial_left_loc, initial_top_loc,  i=0):
+        print("------------------------Level {}---------------------------".format(i))
+        print(self.data_location(initial_left_loc, initial_top_loc))
+
+        for index in range(len(initial_left_loc)):
+            if initial_left_loc[index] != "*":
+                tmp = initial_left_loc[index]
+                initial_left_loc[index] = "*"
+                self.explortory_tree(initial_left_loc, initial_top_loc, i=i+1)
+                initial_left_loc[index] = tmp
+
+        for index in range(len(initial_top_loc)):
+            if initial_top_loc != "*":
+                tmp = initial_top_loc[index]
+                initial_top_loc[index] = "*"
+                self.explortory_tree(initial_left_loc, initial_top_loc, i=i+1)
+                initial_top_loc[index] = tmp
+
