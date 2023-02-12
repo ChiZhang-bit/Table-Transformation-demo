@@ -15,12 +15,17 @@ if __name__ == "__main__":
     table = revision_index(table)
 
     tableinsight = TableInsight(table, table_name)
+
     # print(tableinsight.table)
-    # tableinsight.index_to_column(reverse=True)
+    # tableinsight.transform_top(0, 1)
     # print(tableinsight.table)
 
-    left_loc = ["ChongQing Wolves", "*", "*"]
+    left_loc = ["ChongQing Wolves", "*", "KDA"]
     top_loc = ["*", "Spring"]
+    # print(tableinsight.data_location(left_loc, []))
+    tableinsight.merge_transformation_by_headers(left_loc, top_loc)
+    print(tableinsight.table)
+    input()
 
     tableinsight.single_outlier(1, 2)
     tableinsight.single_trend(1, 2)

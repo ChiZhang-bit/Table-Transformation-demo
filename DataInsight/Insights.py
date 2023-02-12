@@ -12,6 +12,19 @@ class TableInsight(object):
         self.left_header = self.table.index
         self.top_level = len(self.top_header[0])
         self.left_level = len(self.left_header[0])
+        self.top_list, self.left_list = self._extract_headers()
+
+    def _extract_headers(self):
+        '''
+        根据表格的层次索引结构，提取出去重后的表头结构，形成list
+        :return:
+        '''
+        top_tmp_set = list(map(list, zip(*self.top_header.tolist())))
+        top_list = [sorted(list(set(i)), key=i.index) for i in top_tmp_set]
+
+        left_tmp_set = list(map(list, zip(*self.left_header.tolist())))
+        left_list = [sorted(list(set(i)), key=i.index) for i in left_tmp_set]
+        return top_list, left_list
 
     def data_location(self, left_loc: list, top_loc: list):
         """
@@ -38,6 +51,10 @@ class TableInsight(object):
                 print("The key is error")
         return data
 
+    def data_index_location(self, rows: list, columns: list):
+        block_data = self._get_block_value(rows, columns)
+        return block_data
+
     # Table Transformation Functions
     def _update(self):
         self.top_header = self.table.keys()
@@ -52,12 +69,13 @@ class TableInsight(object):
             self.left_level = 1
         self.table.index.names = range(self.left_level)
         self.table.columns.names = range(self.top_level)
+        self.top_list, self.left_list = self._extract_headers()
 
     def transform_left(self, level_id1: int, level_id2: int):
-        if level_id1 >= self.top_level or level_id2 >= self.top_level:
+        if level_id1 >= self.left_level or level_id2 >= self.left_level:
             print("Left_level out of range")
             return
-        self.table = self.table.swaplevel(level_id1, level_id2)
+        self.table = self.table.swaplevel(level_id1, level_id2, axis=0)
         self.table.sort_index(inplace=True)
         self._update()
 
@@ -65,10 +83,8 @@ class TableInsight(object):
         if level_id1 >= self.top_level or level_id2 >= self.top_level:
             print("Top_level out of range")
             return
-        self.table = self.table.transpose()
-        self.table = self.table.swaplevel(level_id1, level_id2)
-        self.table.sort_index(inplace=True)
-        self.table = self.table.transpose()
+        self.table = self.table.swaplevel(level_id1, level_id2, axis=1)
+        self.table.sort_index(inplace=True, axis=1)
         self._update()
 
     def index_to_column(self, reverse=False):
@@ -88,13 +104,39 @@ class TableInsight(object):
         self._update()
 
     # Auto Merge Table Blocks Functions
-    def merge_transformation(self, rows: list, columns: list):
+    def merge_transformation_by_id(self, rows: list, columns: list):
         """
         更加自由的判断能否用来合并不相关的单元格
         :param rows: 第几行？
         :param columns: 第几列？
         :return:
         """
+        pass
+
+    def merge_transformation_by_headers(self, left_loc: list, top_loc: list):
+        """
+        根据已有的headers，来进行合并，经过分析规则， location中的*需要尽可能的靠后，
+        (*，1) -> (1,*)
+        :param left_loc:
+        :param top_loc:
+        :return:
+        """
+        loc1_queue = []
+        transform_result = []
+        for i in range(len(left_loc)):
+            if left_loc[i] == "*":
+                loc1_queue.insert(0, i)
+            elif len(loc1_queue) > 0:
+                self.transform_left(loc1_queue.pop(), i)
+
+        loc1_queue.clear()
+        transform_result.clear()
+        for i in range(len(top_loc)):
+            if top_loc[i] == "*":
+                loc1_queue.insert(0, i)
+            elif len(loc1_queue) > 0:
+                self.transform_top(loc1_queue.pop(), i)
+        return
 
     # Data Insight Analytic Functions
     def _get_single_cell_value(self, row: int, column: int):
@@ -285,7 +327,7 @@ class TableInsight(object):
                 trends.append((0, 0))
         print(trends)
 
-        # Step4: 根据相关系数>=0.8 (强相关的判定)，判断数据趋势的变换是否明显
+        # Step4: 根据相关系数>=0.75 (强相关的判定)，判断数据趋势的变换是否明显
         max_trend = sorted(trends, key=lambda x: x[-1], reverse=True)[0]
         if max_trend[-1] >= 0.8:
             trends_index = trends.index(max_trend)
