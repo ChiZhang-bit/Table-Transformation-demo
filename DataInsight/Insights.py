@@ -12,19 +12,33 @@ class TableInsight(object):
         self.left_header = self.table.index
         self.top_level = len(self.top_header[0])
         self.left_level = len(self.left_header[0])
-        self.top_list, self.left_list = self._extract_headers()
+        self._extract_sort_dict()
 
-    def _extract_headers(self):
+    def _extract_sort_dict(self):
         '''
         根据表格的层次索引结构，提取出去重后的表头结构，形成list
         :return:
         '''
         top_tmp_set = list(map(list, zip(*self.top_header.tolist())))
-        top_list = [sorted(list(set(i)), key=i.index) for i in top_tmp_set]
-
+        top_lists = [sorted(list(set(i)), key=i.index) for i in top_tmp_set]
         left_tmp_set = list(map(list, zip(*self.left_header.tolist())))
-        left_list = [sorted(list(set(i)), key=i.index) for i in left_tmp_set]
-        return top_list, left_list
+        left_lists = [sorted(list(set(i)), key=i.index) for i in left_tmp_set]
+
+        num = 1
+        self.sort_dict = {}
+        for left_list in left_lists:
+            for i in left_list:
+                self.sort_dict[i] = num
+                num += 1
+        for top_list in top_lists:
+            for i in top_list:
+                self.sort_dict[i] = num
+                num += 1
+        return
+
+    def _sort_index_func(self, x: pd.Index):
+        x = [self.sort_dict[i] for i in x]
+        return pd.Index(x)
 
     def data_location(self, left_loc: list, top_loc: list):
         """
@@ -55,9 +69,8 @@ class TableInsight(object):
                 data = pd.concat(concat_list, axis=1)
             except KeyError:
                 print("The key is error")
-        print(self.top_list)
-        data.sort_index(inplace=True, axis=0)
-        data.sort_index(inplace=True, axis=1)
+        data.sort_index(inplace=True, axis=0, key=lambda x: self._sort_index_func(x))
+        data.sort_index(inplace=True, axis=1, key=lambda x: self._sort_index_func(x))
         return data
 
     def data_index_location(self, rows: list, columns: list):
@@ -78,7 +91,6 @@ class TableInsight(object):
             self.left_level = 1
         self.table.index.names = range(self.left_level)
         self.table.columns.names = range(self.top_level)
-        # self.top_list, self.left_list = self._extract_headers()
         return
 
     def transform_left(self, level_id1: int, level_id2: int):
@@ -86,7 +98,7 @@ class TableInsight(object):
             print("Left_level out of range")
             return
         self.table = self.table.swaplevel(level_id1, level_id2, axis=0)
-        self.table.sort_index(inplace=True)
+        self.table.sort_index(inplace=True, axis=0, key=lambda x: self._sort_index_func(x))
         self._update()
 
     def transform_top(self, level_id1: int, level_id2: int):
@@ -94,7 +106,7 @@ class TableInsight(object):
             print("Top_level out of range")
             return
         self.table = self.table.swaplevel(level_id1, level_id2, axis=1)
-        self.table.sort_index(inplace=True, axis=1)
+        self.table.sort_index(inplace=True, axis=1, key=lambda x: self._sort_index_func(x))
         self._update()
 
     def index_to_column(self, reverse=False):
@@ -289,7 +301,7 @@ class TableInsight(object):
             if len(set(tmp_data.index)) == 1:  # 如果该层级的表头等于一个就不记录了
                 left_related_data.append(None)
                 continue
-            tmp_data.sort_index(inplace=True)
+            tmp_data.sort_index(inplace=True, key=lambda x: self._sort_index_func(x))
             left_related_data.append(np.array(tmp_data).flatten())
 
         top_related_data = []
@@ -301,7 +313,7 @@ class TableInsight(object):
             if len(set(tmp_data.index)) == 1:  # 如果该层级的表头等于一个就不记录了
                 top_related_data.append(None)
                 continue
-            tmp_data.sort_index(inplace=True)
+            tmp_data.sort_index(inplace=True, key=lambda x: self._sort_index_func(x))
             top_related_data.append(np.array(tmp_data).flatten())
 
         return left_related_data, top_related_data

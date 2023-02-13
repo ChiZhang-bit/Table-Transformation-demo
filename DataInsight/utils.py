@@ -37,3 +37,5 @@ def trendline(data: list):
     corelation = np.corrcoef(data, fun(index))
     return slope, corelation[0][1]
 
+
+
