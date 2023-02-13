@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from functools import cmp_to_key
 
 
 def iqr_rule(t_data: pd.Series, cell_value):
@@ -35,3 +36,4 @@ def trendline(data: list):
     fun = np.poly1d(coeffs)
     corelation = np.corrcoef(data, fun(index))
     return slope, corelation[0][1]
+

@@ -38,7 +38,10 @@ class TableInsight(object):
             if left_loc[i] == '*':
                 continue
             try:
-                data = data.xs(key=left_loc[i], axis=0, level=i, drop_level=False)
+                concat_list = []
+                for loci in left_loc[i]:
+                    concat_list.append(data.xs(key=loci, axis=0, level=i, drop_level=False))
+                data = pd.concat(concat_list, axis=0)
             except KeyError:
                 print("The key is error")
 
@@ -46,9 +49,15 @@ class TableInsight(object):
             if top_loc[i] == "*":
                 continue
             try:
-                data = data.xs(key=top_loc[i], axis=1, level=i, drop_level=False)
+                concat_list = []
+                for loci in top_loc[i]:
+                    concat_list.append(data.xs(key=loci, axis=1, level=i, drop_level=False))
+                data = pd.concat(concat_list, axis=1)
             except KeyError:
                 print("The key is error")
+        print(self.top_list)
+        data.sort_index(inplace=True, axis=0)
+        data.sort_index(inplace=True, axis=1)
         return data
 
     def data_index_location(self, rows: list, columns: list):
@@ -69,7 +78,8 @@ class TableInsight(object):
             self.left_level = 1
         self.table.index.names = range(self.left_level)
         self.table.columns.names = range(self.top_level)
-        self.top_list, self.left_list = self._extract_headers()
+        # self.top_list, self.left_list = self._extract_headers()
+        return
 
     def transform_left(self, level_id1: int, level_id2: int):
         if level_id1 >= self.left_level or level_id2 >= self.left_level:
@@ -344,7 +354,7 @@ class TableInsight(object):
                f"The table left_header is {self.left_header}, level:{self.left_level}\n" \
                f"The table is {self.table}"
 
-    def explortory_tree(self, initial_left_loc, initial_top_loc,  i=0):
+    def explortory_tree(self, initial_left_loc, initial_top_loc, i=0):
         print("------------------------Level {}---------------------------".format(i))
         print(self.data_location(initial_left_loc, initial_top_loc))
 
@@ -352,13 +362,12 @@ class TableInsight(object):
             if initial_left_loc[index] != "*":
                 tmp = initial_left_loc[index]
                 initial_left_loc[index] = "*"
-                self.explortory_tree(initial_left_loc, initial_top_loc, i=i+1)
+                self.explortory_tree(initial_left_loc, initial_top_loc, i=i + 1)
                 initial_left_loc[index] = tmp
 
         for index in range(len(initial_top_loc)):
             if initial_top_loc != "*":
                 tmp = initial_top_loc[index]
                 initial_top_loc[index] = "*"
-                self.explortory_tree(initial_left_loc, initial_top_loc, i=i+1)
+                self.explortory_tree(initial_left_loc, initial_top_loc, i=i + 1)
                 initial_top_loc[index] = tmp
-
