@@ -290,7 +290,7 @@ class TableInsight(object):
     def _block_flat_data(self, block_data: pd.DataFrame):
         """
         发现Block Data内的一块区域，并将其展平，返回一个列表
-        :param block_data:
+        :param block_data: 原始的DataFrame
         :return:
         """
         left_related_data = []
@@ -367,6 +367,13 @@ class TableInsight(object):
                f"The table is {self.table}"
 
     def explortory_tree(self, initial_left_loc, initial_top_loc, i=0):
+        '''
+        以[*,*,*,*]替换其中的部分用于探索式的分析层次表个数据
+        :param initial_left_loc:
+        :param initial_top_loc:
+        :param i: 第几层
+        :return:
+        '''
         print("------------------------Level {}---------------------------".format(i))
         print(self.data_location(initial_left_loc, initial_top_loc))
 
