@@ -40,6 +40,7 @@ class TableInsight(object):
         x = [self.sort_dict[i] for i in x]
         return pd.Index(x)
 
+    # data_location functions
     def data_location(self, left_loc: list, top_loc: list):
         """
         left_loc = [*, * , name] 筛选出数据区域
@@ -76,6 +77,66 @@ class TableInsight(object):
     def data_index_location(self, rows: list, columns: list):
         block_data = self._get_block_value(rows, columns)
         return block_data
+
+    def find_index_num_by_loc_list(self, left_loc: list, top_loc: list):
+        """
+        根据loc_list 查找 rows 和 columns
+        :param left_loc:
+        :param top_loc:
+        :return: 返回对应的num_list
+        """
+        top_tmp_set = list(map(list, zip(*self.top_header.tolist())))
+        left_tmp_set = list(map(list, zip(*self.left_header.tolist())))
+        rows = set(range(self.table.shape[0]))
+        columns = set(range(self.table.shape[1]))
+        index_dict = {}
+        for top_tmp_list in top_tmp_set:
+            for index, item in enumerate(top_tmp_list):
+                if item in index_dict.keys():
+                    index_dict[item].add(index)
+                else:
+                    index_dict[item] = {index}
+        for left_tmp_list in left_tmp_set:
+            for index, item in enumerate(left_tmp_list):
+                if item in index_dict.keys():
+                    index_dict[item].add(index)
+                else:
+                    index_dict[item] = {index}
+        ">>> index_dict: {2018: [0, 1, 2, 3], 'Spring': [0, 4, 8, 12, 16, 20], ...}"
+        for left_headers in left_loc:
+            tmp = set()
+            if left_headers == "*":
+                continue
+            for left_header in left_headers:
+                tmp = tmp | index_dict[left_header]
+            rows = rows & tmp
+        for top_headers in top_loc:
+            tmp = set()
+            if top_headers == "*":
+                continue
+            for top_header in top_headers:
+                tmp = tmp | index_dict[top_header]
+            columns = columns & tmp
+        rows = sorted(list(rows))
+        columns = sorted(list(columns))
+        return rows, columns
+
+    def find_list_by_index_num(self, rows: list, columns: list):
+        """
+        根据 rows columns, 返回对应格式要求的index_num
+        :param rows:
+        :param columns:
+        :return:
+        """
+        top_index = self.top_header[columns].tolist()
+        left_index = self.left_header[rows].tolist()
+
+        top_tmp_set = list(map(list, zip(*top_index)))
+        top_lists = [sorted(list(set(i)), key=i.index) for i in top_tmp_set]
+        left_tmp_set = list(map(list, zip(*left_index)))
+        left_lists = [sorted(list(set(i)), key=i.index) for i in left_tmp_set]
+
+        return left_lists, top_lists
 
     # Table Transformation Functions
     def _update(self):
@@ -126,15 +187,6 @@ class TableInsight(object):
         self._update()
 
     # Auto Merge Table Blocks Functions
-    def merge_transformation_by_id(self, rows: list, columns: list):
-        """
-        更加自由的判断能否用来合并不相关的单元格
-        :param rows: 第几行？
-        :param columns: 第几列？
-        :return:
-        """
-        pass
-
     def merge_transformation_by_headers(self, left_loc: list, top_loc: list):
         """
         根据已有的headers，来进行合并，经过分析规则， location中的*需要尽可能的靠后，
@@ -172,26 +224,32 @@ class TableInsight(object):
         top_location = self.top_header[column]
         related_data = []
         for i in range(self.left_level):
-            data = self.table[top_location]
+            data = self.table.xs(top_location, axis=1, drop_level=True)
             for j in range(self.left_level):
                 if i != j:
                     data = data.xs(left_location[j], level=j, axis=0, drop_level=False)
             related_data.append(data)
 
         for i in range(self.top_level):
-            data = self.table.loc[left_location]
+            data = self.table.xs(left_location, axis=0, drop_level=True)
             for j in range(self.top_level):
                 if i != j:
-                    print(data)
                     data = data.xs(top_location[j], level=j, axis=0, drop_level=False)
             related_data.append(data)
         return related_data
 
-    def single_outlier(self, row: int, column: int):
+    def single_outlier(self, rows: list, columns: list):
         """
         假定只有一个单元格， 评判一个single_cell的outlier, 评估其异常程度
+        :param: rows:
+        :param: columns:
         :return: 异常程度
         """
+        if len(rows) != 1 or len(columns) != 1:
+            print("Not single cell!")
+            return
+        else:
+            row, column = rows[0], columns[0]
         # Step1: find current cell location
         cell_value = self._get_single_cell_value(row, column)
 
@@ -219,13 +277,18 @@ class TableInsight(object):
             else:
                 print(f"Outlier:将顶部的第{outlier_index - self.left_level}层移到最下层")
 
-    def single_trend(self, row: int, column: int):
+    def single_trend(self, rows: list, columns: list):
         """
         假定只有一个单元格，评判一个single_cell的outlier, 评估其异常程度
-        :param row:
-        :param column:
+        :param columns:
+        :param rows:
         :return:
         """
+        if len(rows) != 1 or len(columns) != 1:
+            print("Not single cell!")
+            return
+        else:
+            row, column = rows[0], columns[0]
         # Step1: 根据层次找到与其相关的单元格，先找LEFT，再找TOP，
         # 顺序如下： 左侧表头1-n, 顶侧表头1-m
         related_data = self._single_related_data(row, column)
@@ -249,11 +312,19 @@ class TableInsight(object):
         else:
             print("No obvious trends!")
 
-    def single_max_min_imum(self, row: int, column: int):
+    def single_max_min_imum(self, rows: list, columns: list):
         """
         判断cell value是否是一系列值中的最大值/最小值
+        :param: rows:
+        :param: columns:
         :return:
         """
+        if len(rows) != 1 or len(columns) != 1:
+            print("Not single cell!")
+            return
+        else:
+            row, column = rows[0], columns[0]
+
         # Step1: find current cell location
         cell_value = self._get_single_cell_value(row, column)
 
@@ -295,6 +366,7 @@ class TableInsight(object):
         """
         left_related_data = []
         for i in range(self.left_level):
+            # 按照各个等级，只保留该等级的表头
             re_level = list(range(self.left_level))
             re_level.pop(i)
             tmp_data = block_data.reset_index(level=re_level, drop=True)
@@ -305,11 +377,12 @@ class TableInsight(object):
             left_related_data.append(np.array(tmp_data).flatten())
 
         top_related_data = []
-        tmp_data = block_data.transpose()
+        tmp_data1 = block_data.transpose()
         for i in range(self.top_level):
+            # 按照各个等级，只保留该等级的表头
             re_level = list(range(self.top_level))
             re_level.pop(i)
-            tmp_data = tmp_data.reset_index(level=re_level, drop=True)
+            tmp_data = tmp_data1.reset_index(level=re_level, drop=True)
             if len(set(tmp_data.index)) == 1:  # 如果该层级的表头等于一个就不记录了
                 top_related_data.append(None)
                 continue
@@ -319,9 +392,14 @@ class TableInsight(object):
         return left_related_data, top_related_data
 
     def block_trend(self, rows: list, columns: list):
+        '''
+        已知Block的情况下，根据Block展平的方式，判断Block是否内含有趋势
+        :param rows:
+        :param columns:
+        :return:
+        '''
         # Step1: find current table block
         block_data = self._get_block_value(rows, columns)
-        print(block_data, "\n", block_data.index)
 
         # Step2: 把数据放到一列上
         left_related_data, top_related_data = self._block_flat_data(block_data)
@@ -347,7 +425,6 @@ class TableInsight(object):
                 trends.append(trendline(numlist))
             else:
                 trends.append((0, 0))
-        print(trends)
 
         # Step4: 根据相关系数>=0.75 (强相关的判定)，判断数据趋势的变换是否明显
         max_trend = sorted(trends, key=lambda x: x[-1], reverse=True)[0]
@@ -359,6 +436,13 @@ class TableInsight(object):
                 print(f"Block Trend:将顶部的第{trends_index - self.left_level}层移到左侧，其余所有都移到上层")
         else:
             print("No obvious block trends!")
+
+    def block_correlation(self):
+        """
+        查找Block内有无correlation的关系
+        :return:
+        """
+        return
 
     def __str__(self):
         return f"The table_id is {self.table_id}\n" \
