@@ -22,8 +22,10 @@ if __name__ == "__main__":
     # tableinsight.transform_top(0, 1)
     # print(tableinsight.table)
 
-    left_loc = [["Nanjing Hero", "WuHan Estar"], ["Mid", "Jungle"], ["KDA"]]
-    top_loc = ["*", ["Spring", "Summer"]]
+    left_loc = [["Nanjing Hero", "WuHan Estar"], "*", ["KDA"]]
+    top_loc = ["*", ["Spring", "Summer", "Autumn"]]
+    # print(tableinsight.normal_loc_func(left_loc, top_loc))
+    # input()
     # print(tableinsight.data_location(left_loc, top_loc))
     # input()
 
@@ -31,16 +33,20 @@ if __name__ == "__main__":
     # print(tableinsight.table)
     # tableinsight.explortory_tree(left_loc, top_loc)
 
-    tableinsight.find_list_by_index_num([0, 1], [0, 1, 2, 3])
-    input()
+    # tableinsight.find_list_by_index_num([0, 1], [0, 1, 2, 3])
+    # input()
 
     tableinsight.single_outlier([1], [2])
     tableinsight.single_trend([1], [2])
     tableinsight.single_max_min_imum([1], [2])
 
+    # tableinsight.block_trend(left_loc=left_loc, top_loc=top_loc)
+    tableinsight.block_correlation(left_loc, top_loc)
+
+
     # print(table["Spring"].loc['WuHan Estar']['KDA'])
     # print(table[2018]["Spring"].loc['ChongQing Wolves'])
 
-    rows = [0, 1]
-    columns = [0, 1, 2, 3]
-    tableinsight.block_trend(rows, columns)
+    # rows = [0, 1]
+    # columns = [0, 1, 2, 3]
+    # tableinsight.block_trend(left_loc, top_loc)

@@ -12,25 +12,33 @@ class TableInsight(object):
         self.left_header = self.table.index
         self.top_level = len(self.top_header[0])
         self.left_level = len(self.left_header[0])
+        self._extract_header_list()
         self._extract_sort_dict()
+
+    def _extract_header_list(self):
+        """
+        提取出表格层次列表，分为 top_header_list 和 left_header_list 两个部分
+        :return:
+        """
+        top_tmp_set = list(map(list, zip(*self.top_header.tolist())))
+        self.top_lists = [sorted(list(set(i)), key=i.index) for i in top_tmp_set]
+        left_tmp_set = list(map(list, zip(*self.left_header.tolist())))
+        self.left_lists = [sorted(list(set(i)), key=i.index) for i in left_tmp_set]
+        return
 
     def _extract_sort_dict(self):
         '''
         根据表格的层次索引结构，提取出去重后的表头结构，形成list
         :return:
         '''
-        top_tmp_set = list(map(list, zip(*self.top_header.tolist())))
-        top_lists = [sorted(list(set(i)), key=i.index) for i in top_tmp_set]
-        left_tmp_set = list(map(list, zip(*self.left_header.tolist())))
-        left_lists = [sorted(list(set(i)), key=i.index) for i in left_tmp_set]
-
+        self._extract_header_list()
         num = 1
         self.sort_dict = {}
-        for left_list in left_lists:
+        for left_list in self.left_lists:
             for i in left_list:
                 self.sort_dict[i] = num
                 num += 1
-        for top_list in top_lists:
+        for top_list in self.top_lists:
             for i in top_list:
                 self.sort_dict[i] = num
                 num += 1
@@ -41,6 +49,19 @@ class TableInsight(object):
         return pd.Index(x)
 
     # data_location functions
+    def normal_loc_func(self, left_loc: list, top_loc: list):
+        for i, item in enumerate(left_loc):
+            if item != "*":
+                if len(item) == len(self.left_lists[i]):
+                    left_loc[i] = "*"
+
+        for i, item in enumerate(top_loc):
+            if item != "*":
+                if len(item) == len(self.top_lists[i]):
+                    top_loc[i] = "*"
+
+        return left_loc, top_loc
+
     def data_location(self, left_loc: list, top_loc: list):
         """
         left_loc = [*, * , name] 筛选出数据区域
@@ -48,6 +69,7 @@ class TableInsight(object):
         :param top_loc:
         :return:
         """
+        left_loc, top_loc = self.normal_loc_func(left_loc, top_loc)
         data = self.table
         for i in range(len(left_loc)):
             if left_loc[i] == '*':
@@ -58,7 +80,8 @@ class TableInsight(object):
                     concat_list.append(data.xs(key=loci, axis=0, level=i, drop_level=False))
                 data = pd.concat(concat_list, axis=0)
             except KeyError:
-                print("The key is error")
+                print(f"The key: {loci} is error")
+                raise KeyError
 
         for i in range(len(top_loc)):
             if top_loc[i] == "*":
@@ -69,7 +92,9 @@ class TableInsight(object):
                     concat_list.append(data.xs(key=loci, axis=1, level=i, drop_level=False))
                 data = pd.concat(concat_list, axis=1)
             except KeyError:
-                print("The key is error")
+                # 这里变换可能会有问题
+                print(f"The key:{loci} is error")
+                raise KeyError
         data.sort_index(inplace=True, axis=0, key=lambda x: self._sort_index_func(x))
         data.sort_index(inplace=True, axis=1, key=lambda x: self._sort_index_func(x))
         return data
@@ -152,11 +177,15 @@ class TableInsight(object):
             self.left_level = 1
         self.table.index.names = range(self.left_level)
         self.table.columns.names = range(self.top_level)
+        self._extract_header_list()
         return
 
     def transform_left(self, level_id1: int, level_id2: int):
         if level_id1 >= self.left_level or level_id2 >= self.left_level:
             print("Left_level out of range")
+            return
+        if level_id1 == level_id2:
+            print("Same level id in transformation left")
             return
         self.table = self.table.swaplevel(level_id1, level_id2, axis=0)
         self.table.sort_index(inplace=True, axis=0, key=lambda x: self._sort_index_func(x))
@@ -165,6 +194,9 @@ class TableInsight(object):
     def transform_top(self, level_id1: int, level_id2: int):
         if level_id1 >= self.top_level or level_id2 >= self.top_level:
             print("Top_level out of range")
+            return
+        if level_id1 == level_id2:
+            print("Same level id in transformation top")
             return
         self.table = self.table.swaplevel(level_id1, level_id2, axis=1)
         self.table.sort_index(inplace=True, axis=1, key=lambda x: self._sort_index_func(x))
@@ -195,13 +227,16 @@ class TableInsight(object):
         :param top_loc:
         :return:
         """
+        left_loc, top_loc = self.normal_loc_func(left_loc, top_loc)
         loc1_queue = []
         transform_result = []
         for i in range(len(left_loc)):
             if left_loc[i] == "*":
                 loc1_queue.insert(0, i)
             elif len(loc1_queue) > 0:
-                self.transform_left(loc1_queue.pop(), i)
+                i_loc = loc1_queue.pop()
+                self.transform_left(i_loc, i)  # 将loc1_queue 与 i 交换位置
+                swapPositions(left_loc, i_loc, i)
 
         loc1_queue.clear()
         transform_result.clear()
@@ -209,8 +244,11 @@ class TableInsight(object):
             if top_loc[i] == "*":
                 loc1_queue.insert(0, i)
             elif len(loc1_queue) > 0:
-                self.transform_top(loc1_queue.pop(), i)
-        return
+                i_loc = loc1_queue.pop()
+                self.transform_top(i_loc, i)
+                swapPositions(top_loc, i_loc, i)
+        self._update()
+        return left_loc, top_loc
 
     # Data Insight Analytic Functions
     def _get_single_cell_value(self, row: int, column: int):
@@ -391,15 +429,17 @@ class TableInsight(object):
 
         return left_related_data, top_related_data
 
-    def block_trend(self, rows: list, columns: list):
+    def block_trend(self, left_loc: list, top_loc: list):
         '''
         已知Block的情况下，根据Block展平的方式，判断Block是否内含有趋势
-        :param rows:
-        :param columns:
+        :param left_loc:
+        :param top_loc:
         :return:
         '''
-        # Step1: find current table block
-        block_data = self._get_block_value(rows, columns)
+        # Step1: 合并，之后 find current table block
+        left_loc, top_loc = self.merge_transformation_by_headers(left_loc=left_loc, top_loc=top_loc)
+        # 合并之后需要根据变换规则把left_loc和top_loc进行调整
+        block_data = self.data_location(left_loc, top_loc)
 
         # Step2: 把数据放到一列上
         left_related_data, top_related_data = self._block_flat_data(block_data)
@@ -437,27 +477,79 @@ class TableInsight(object):
         else:
             print("No obvious block trends!")
 
-    def block_correlation(self):
+    def block_correlation(self, left_loc: list, top_loc: list):
         """
-        查找Block内有无correlation的关系
-        :return:
+        查找Block内有无correlation的关系, correlation的关系主要在于两个列，
+        correlation的列应该放在左侧或者上侧的最底层
+        :return: 对表格进行适当的变换
         """
+        # Step1: 合并，之后将对应的数据块筛选出来
+        left_loc, top_loc = self.merge_transformation_by_headers(left_loc=left_loc, top_loc=top_loc)
+        # 合并之后需要根据变换规则把left_loc和top_loc进行调整
+        block_data = self.data_location(left_loc, top_loc)
+
+        # Step2: 穷举所有可能的具有关系的列
+        left_related_data = []
+        for i in range(self.left_level):
+            reverse_level = list(range(self.left_level))
+            reverse_level.remove(i)
+            data = block_data.reset_index(reverse_level, drop=True)
+            data.sort_index(key=lambda x: self._sort_index_func(x), inplace=True)
+            left_related_data.append(data)
+
+        trans_block_data = block_data.transpose()
+        top_related_data = []
+        for i in range(self.top_level):
+            reverse_level = list(range(self.top_level))
+            reverse_level.remove(i)
+            data = trans_block_data.reset_index(reverse_level, drop=True)
+            data.sort_index(key=lambda x: self._sort_index_func(x), inplace=True)
+            top_related_data.append(data)
+
+        # Step3: 针对数据关系列，找出他们之间的皮尔逊相关系数
+        co_list = []
+        for i, item in enumerate(left_related_data):
+            arr = np.array(item)
+            row_names = {i: name for i, name in enumerate(list(item.index))}
+            co_arr = relation(arr)
+            # 求相关性,平均值求最大：
+            store = calc_max_relation(co_arr, row_names).sort()
+            if len(store) > 0:
+                co_list.append((i, store[0]))
+
+        for i, item in enumerate(top_related_data):
+            arr = np.array(item)
+            row_names = {i: name for i, name in enumerate(list(item.index))}
+            co_arr = relation(arr)
+            # 求相关性,平均值求最大：
+            store = calc_max_relation(co_arr, row_names).sort()
+            if len(store) > 0:
+                co_list.append((i+self.left_level, store[0]))
+
+        # Step4: 根据所有得到的最优Correlation的值进行排序，得到最具有Correlation的一部分
+        co_list.sort(key=lambda x: x[1][1], reverse=True)
+        print(co_list)
+        indexs = co_list[0][1][0]
+        relation_result = co_list[0][1][1]
+        loc = co_list[0][0]
+        print(f"最具有关系的是：{indexs}, 他们的相关性是:{relation_result}")
+        if loc >= self.left_level:
+            print(f"位于上层的第{loc - self.left_level}层，将他放置到最下层（最底层）")
+            self.transform_top(loc - self.left_level, self.top_level-1)
+        else:
+            print(f"位于左侧的第{loc}层，将他放置到最右层（最底层）")
+            self.transform_left(loc, self.left_level-1)
+        print(self.table)
         return
 
-    def __str__(self):
-        return f"The table_id is {self.table_id}\n" \
-               f"The table top_header is {self.top_header}, level:{self.top_level}\n" \
-               f"The table left_header is {self.left_header}, level:{self.left_level}\n" \
-               f"The table is {self.table}"
-
     def explortory_tree(self, initial_left_loc, initial_top_loc, i=0):
-        '''
+        """
         以[*,*,*,*]替换其中的部分用于探索式的分析层次表个数据
         :param initial_left_loc:
         :param initial_top_loc:
         :param i: 第几层
         :return:
-        '''
+        """
         print("------------------------Level {}---------------------------".format(i))
         print(self.data_location(initial_left_loc, initial_top_loc))
 
@@ -474,3 +566,12 @@ class TableInsight(object):
                 initial_top_loc[index] = "*"
                 self.explortory_tree(initial_left_loc, initial_top_loc, i=i + 1)
                 initial_top_loc[index] = tmp
+
+    def decision_transformation_way(self, left_loc, top_loc, rows, columns):
+        pass
+
+    def __str__(self):
+        return f"The table_id is {self.table_id}\n" \
+               f"The table top_header is {self.top_header}, level:{self.top_level}\n" \
+               f"The table left_header is {self.left_header}, level:{self.left_level}\n" \
+               f"The table is {self.table}"
