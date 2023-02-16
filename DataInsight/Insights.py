@@ -218,6 +218,10 @@ class TableInsight(object):
             self.table = self.table.stack()
         self._update()
 
+    def transpose(self):
+        self.table.transpose()
+        self._update()
+
     # Auto Merge Table Blocks Functions
     def merge_transformation_by_headers(self, left_loc: list, top_loc: list):
         """
@@ -285,7 +289,7 @@ class TableInsight(object):
         """
         if len(rows) != 1 or len(columns) != 1:
             print("Not single cell!")
-            return
+            return None
         else:
             row, column = rows[0], columns[0]
         # Step1: find current cell location
@@ -308,12 +312,15 @@ class TableInsight(object):
         # print(outliers)
         if max(outliers) == 0:
             print("No outlier!")
+            return None
         else:
             outlier_index = outliers.index(max(outliers))
             if outlier_index <= self.left_level - 1:
                 print(f"Outlier:将左侧的第{outlier_index}层移到最右层")
+                return max(outliers), outlier_index, 0
             else:
                 print(f"Outlier:将顶部的第{outlier_index - self.left_level}层移到最下层")
+                return max(outliers), outlier_index, 1
 
     def single_trend(self, rows: list, columns: list):
         """
@@ -324,7 +331,7 @@ class TableInsight(object):
         """
         if len(rows) != 1 or len(columns) != 1:
             print("Not single cell!")
-            return
+            return -1, -1, -1
         else:
             row, column = rows[0], columns[0]
         # Step1: 根据层次找到与其相关的单元格，先找LEFT，再找TOP，
@@ -341,14 +348,17 @@ class TableInsight(object):
 
         # Step3: 根据相关系数>=0.8 (强相关的判定)，判断数据趋势的变换是否明显
         max_trend = sorted(trends, key=lambda x: x[-1], reverse=True)[0]
-        if max_trend[-1] >= 0.8:
+        if max_trend[-1] >= 0.8 and max_trend[0] >= 1:
             trends_index = trends.index(max_trend)
             if trends_index <= self.left_level - 1:
                 print(f"Trend:将左侧的第{trends_index}层移到最右层，之后转置")
+                return max_trend[-1], trends_index, 0
             else:
                 print(f"Trend:将顶部的第{trends_index - self.left_level}层移到最下层")
+                return max_trend[-1], trends_index, 1
         else:
             print("No obvious trends!")
+            return -1, -1, -1
 
     def single_max_min_imum(self, rows: list, columns: list):
         """
@@ -359,7 +369,7 @@ class TableInsight(object):
         """
         if len(rows) != 1 or len(columns) != 1:
             print("Not single cell!")
-            return
+            return None
         else:
             row, column = rows[0], columns[0]
 
@@ -391,10 +401,13 @@ class TableInsight(object):
             max_min_index = max_min_list[0][0]
             if max_min_index <= self.left_level - 1:
                 print(f"Max&minimum:将左侧的第{max_min_index}层移到最右层，之后转置")
+                return max_min_list[0][1], max_min_index, 0
             else:
                 print(f"Max&minimum:将顶部的第{max_min_index - self.left_level}层移到最下层")
+                return max_min_list[0][1], max_min_index, 1
         else:
             print("Not any max/min!")
+            return None
 
     def _block_flat_data(self, block_data: pd.DataFrame):
         """
@@ -466,16 +479,19 @@ class TableInsight(object):
             else:
                 trends.append((0, 0))
 
-        # Step4: 根据相关系数>=0.75 (强相关的判定)，判断数据趋势的变换是否明显
+        # Step4: 根据相关系数>=0.80 (强相关的判定)，判断数据趋势的变换是否明显
         max_trend = sorted(trends, key=lambda x: x[-1], reverse=True)[0]
-        if max_trend[-1] >= 0.8:
+        if max_trend[-1] >= 0.80:
             trends_index = trends.index(max_trend)
             if trends_index <= self.left_level - 1:
                 print(f"Block Trend:将左侧的第{trends_index}层保留，其余移到上层表头")
+                return max_trend[-1], trends_index, 0
             else:
                 print(f"Block Trend:将顶部的第{trends_index - self.left_level}层移到左侧，其余所有都移到上层")
+                return max_trend[-1], trends_index, 1
         else:
             print("No obvious block trends!")
+            return None
 
     def block_correlation(self, left_loc: list, top_loc: list):
         """
@@ -524,7 +540,7 @@ class TableInsight(object):
             # 求相关性,平均值求最大：
             store = calc_max_relation(co_arr, row_names).sort()
             if len(store) > 0:
-                co_list.append((i+self.left_level, store[0]))
+                co_list.append((i + self.left_level, store[0]))
 
         # Step4: 根据所有得到的最优Correlation的值进行排序，得到最具有Correlation的一部分
         co_list.sort(key=lambda x: x[1][1], reverse=True)
@@ -533,14 +549,20 @@ class TableInsight(object):
         relation_result = co_list[0][1][1]
         loc = co_list[0][0]
         print(f"最具有关系的是：{indexs}, 他们的相关性是:{relation_result}")
-        if loc >= self.left_level:
-            print(f"位于上层的第{loc - self.left_level}层，将他放置到最下层（最底层）")
-            self.transform_top(loc - self.left_level, self.top_level-1)
+
+        if relation_result >= 0.80:
+            if loc >= self.left_level:
+                print(f"位于上层的第{loc - self.left_level}层，将他放置到最下层（最底层）")
+                # self.transform_top(loc - self.left_level, self.top_level - 1)
+                return relation_result, indexs, loc, 1
+            else:
+                print(f"位于左侧的第{loc}层，将他放置到最右层（最底层）")
+                return relation_result, indexs, loc, 0
+                # self.transform_left(loc, self.left_level - 1)
+            # print(self.table)
         else:
-            print(f"位于左侧的第{loc}层，将他放置到最右层（最底层）")
-            self.transform_left(loc, self.left_level-1)
-        print(self.table)
-        return
+            print("No obvious correlation!")
+            return None
 
     def explortory_tree(self, initial_left_loc, initial_top_loc, i=0):
         """
@@ -567,8 +589,154 @@ class TableInsight(object):
                 self.explortory_tree(initial_left_loc, initial_top_loc, i=i + 1)
                 initial_top_loc[index] = tmp
 
-    def decision_transformation_way(self, left_loc, top_loc, rows, columns):
-        pass
+    def decision_transformation_way(self, rows, columns, left_loc=None, top_loc=None):
+        """
+        根据位置，判定到底使用哪一种transformation的方式
+        :param rows:
+        :param columns:
+        :param left_loc:
+        :param top_loc:
+        :return:
+        """
+        if left_loc is None or top_loc is None:
+            left_loc, top_loc = self.find_list_by_index_num(rows=rows, columns=columns)
+
+        if judge_block_or_single(rows, columns) is True:
+            # block 的 Insight 判定， 先合并
+            left_loc, top_loc = self.merge_transformation_by_headers(left_loc, top_loc)
+            trend_data = self.block_trend(left_loc=left_loc, top_loc=top_loc)
+            correlation_data = self.block_correlation(left_loc=left_loc, top_loc=top_loc)
+            """
+            >>> trend_data: max_trend[-1], trends_index, 1 (1 means top, 0 means left)
+                分别表示 返回的trend值，针对trend移动的下标： 
+                如果trend在左侧，那么只把trends_index保留，其余移到上层
+                如果trend在顶部，那么只把trend_index移到左边，其余移到上层
+            >>> correlation_data: relation_result, indexs, loc, 1 (1 means top, 0 means left)
+                分别表示 返回的relation_result结果，indexs表示具有强相关性的两列的名称
+                loc表示对应的位置：
+                loc > left_level: 将上层的放到最下层；
+                loc <= left_level: 将左层的放到最右层；
+            """
+            if (trend_data is not None and
+                correlation_data is not None and
+                trend_data[0] >= correlation_data[0]) \
+                    or \
+                    (trend_data is not None and
+                     correlation_data is None):
+                # 说明要符合trend的变换规则：
+                print("choose block trend")
+                trends_index = trend_data[1]
+                if trend_data[1] <= self.left_level - 1 and trend_data[2] == 0:
+                    left_front_location = 0
+                    self.transform_left(trends_index, left_front_location)
+                    swapPositions(left_loc, left_front_location, trends_index)
+                    left_front_location += 1
+                    """
+                    下面这一段代码的意思是，如果block_trend在左边，那就先把左边的trend_index移到最左边
+                    然后要注意，如果有一个筛选的是只有一个index，那么可以不移动，把他放到第二位
+                    用left_front_location维护移到最左边的那个
+                    """
+                    for i in range(self.left_level - 1, 0, -1):
+                        if i <= left_front_location:
+                            break
+                        if len(left_loc[i]) == 1 and left_loc[i] != "*":
+                            self.transform_left(i, left_front_location)
+                            swapPositions(left_loc, left_front_location, i)
+                            left_front_location += 1
+                        self.index_to_column()
+                        top_loc.append(left_loc.pop())
+                else:
+                    top_front_location = 0
+                    self.transform_top(trends_index - self.left_level, self.top_level - 1)
+                    swapPositions(top_loc, trends_index - self.left_level, self.top_level - 1)
+                    self.index_to_column(reverse=True)
+                    left_loc.append(top_loc.pop())
+                    self.transform_left(self.left_level - 1, 0)
+                    swapPositions(left_loc, self.left_level - 1, 0)
+                print(f"block trend: left headers")
+            elif (trend_data is not None and
+                  correlation_data is not None and
+                  trend_data[0] < correlation_data[0]) \
+                    or \
+                    (trend_data is None and
+                     correlation_data is not None):
+                # 说明要符合correlation的变换规则
+                print("choose block correlation data")
+                correlation_index = correlation_data[2]
+                if correlation_index < self.left_level and correlation_data[3] == 0:
+                    self.transform_left(correlation_index, self.left_level - 1)
+                    swapPositions(left_loc, correlation_index, self.left_level - 1)
+                else:
+                    self.transform_top(correlation_index - self.left_level, self.top_level - 1)
+                    swapPositions(top_loc, correlation_index - self.left_level, self.top_level - 1)
+                print(f"block correlation:{correlation_data[1]}")
+            else:
+                print("No data insight！")
+        else:
+            # 这里是single cell的
+            single_value = self._get_single_cell_value(rows[0], columns[0])
+            outlier_data = self.single_outlier(rows, columns)
+            trend_data = self.single_trend(rows, columns)
+            max_min_data = self.single_max_min_imum(rows, columns)
+            """
+            >>> outlier:  max_outliers, outlier_index, 0/1 (0 means left, 1 means top)
+            >>> trend: max_trend(correlation), trend_index, 0/1
+            >>> max_min_imum: max_min_exceed_num, max_min_index, 0/1 (Maybe None)
+            首先要设定优先级规则： 这里认为 outliers > max_min_imum, 因为有的可能是最大值，但是不一定是异常值，
+            但具有明显异常的大概率是 最大/最小 值
+            如何判定 trend 与 outlier/max_min 该选哪一个呢？
+            """
+            # 先比较outlier 和 max_min_data:
+            if outlier_data is not None:
+                data1 = outlier_data[0]
+                outlier_flag = True
+            elif max_min_data is not None:
+                data1 = max_min_data[0]
+                outlier_flag = False
+            else:
+                data1 = None
+                outlier_flag = False
+
+            # 判断比较data1 与 trend: 暂时先默认 data1 > trend
+            if trend_data[0] == -1 and data1 is None:
+                print("No single cell insight.")
+                return
+            if data1 is not None:
+                if outlier_flag is True:
+                    # 根据outlier insight 来变换：
+                    print("choose single outlier")
+                    outlier_index = outlier_data[1]
+                    if outlier_index <= self.left_level - 1:
+                        self.transform_left(outlier_index, self.left_level - 1)
+                        swapPositions(left_loc, outlier_index, self.left_level - 1)
+                    else:
+                        self.transform_top(outlier_index - self.left_level, self.top_level - 1)
+                        swapPositions(top_loc, outlier_index - self.left_level, self.top_level - 1)
+                else:
+                    # 根据max_min_imum insight 来变换：
+                    print("choose single max_min_imum")
+                    max_min_index = max_min_data[1]
+                    if max_min_index <= self.left_level - 1:
+                        self.transform_left(max_min_index, self.left_level - 1)
+                        swapPositions(left_loc, max_min_index, self.left_level - 1)
+                        self.transpose()
+                        left_loc, top_loc = top_loc, left_loc
+                    else:
+                        self.transform_top(max_min_index - self.left_level, self.top_level - 1)
+                        swapPositions(top_loc, max_min_index - self.left_level, self.top_level - 1)
+            if trend_data[0] != -1 and data1 is None:
+                # 根据trend来变换：
+                print("choose single trend")
+                trend_index = trend_data[1]
+                if trend_index <= self.left_level - 1:
+                    self.transform_left(trend_index, self.left_level - 1)
+                    swapPositions(left_loc, trend_index, self.left_level - 1)
+                    self.transpose()
+                    left_loc, top_loc = top_loc, left_loc
+                else:
+                    self.transform_top(trend_index - self.left_level, self.top_level - 1)
+                    swapPositions(top_loc, trend_index - self.left_level, self.top_level - 1)
+            return
 
     def __str__(self):
         return f"The table_id is {self.table_id}\n" \

@@ -41,12 +41,10 @@ if __name__ == "__main__":
     tableinsight.single_max_min_imum([1], [2])
 
     # tableinsight.block_trend(left_loc=left_loc, top_loc=top_loc)
-    tableinsight.block_correlation(left_loc, top_loc)
+    # tableinsight.block_correlation(left_loc, top_loc)
 
-
-    # print(table["Spring"].loc['WuHan Estar']['KDA'])
-    # print(table[2018]["Spring"].loc['ChongQing Wolves'])
-
-    # rows = [0, 1]
-    # columns = [0, 1, 2, 3]
+    rows = [0, 1, 2, 3, 4]
+    columns = [0, 1, 2, 3, 5, 6]
+    tableinsight.decision_transformation_way(rows, columns, left_loc=left_loc, top_loc=top_loc)
+    print(tableinsight.table)
     # tableinsight.block_trend(left_loc, top_loc)

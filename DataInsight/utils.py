@@ -84,4 +84,19 @@ def calc_max_relation(co_arr: np.array, headers: dict):
     return store
 
 
-
+def judge_block_or_single(rows, columns):
+    """
+    判定一个区域是block还是single cell， 返回1 0 ， 1 为 block ， 0 为 single cell
+    :param rows:
+    :param columns:
+    :return:
+    """
+    if len(rows) == 1 and len(columns) == 1:
+        return False
+    if len(rows) > 1 and len(columns) >= 1:
+        return True
+    if len(rows) >= 1 and len(columns) > 1:
+        return True
+    if len(rows) > 1 and len(columns) > 1:
+        return True
+    return True
