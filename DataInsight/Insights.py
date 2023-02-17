@@ -49,6 +49,32 @@ class TableInsight(object):
         return pd.Index(x)
 
     # data_location functions
+    def revision_loc_list(self, loc):
+        """
+        根据loc，修正形成规范的left_loc, top_loc
+        :param loc: [["A", "B"], ["1"]]
+        :return: left_loc, top_loc
+        """
+        left_loc = []
+        top_loc = []
+        for i in self.left_lists:
+            flag = False
+            for j in loc:
+                if j[0] in i:
+                    flag = True
+                    left_loc.append(j)
+            if not flag:
+                left_loc.append("*")
+        for i in self.top_lists:
+            flag = False
+            for j in loc:
+                if j[0] in i:
+                    flag = True
+                    top_loc.append(j)
+            if not flag:
+                top_loc.append("*")
+        return left_loc, top_loc
+
     def normal_loc_func(self, left_loc: list, top_loc: list):
         for i, item in enumerate(left_loc):
             if item != "*":

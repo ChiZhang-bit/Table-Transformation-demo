@@ -18,6 +18,11 @@ if __name__ == "__main__":
     # print(table)
 
     tableinsight = TableInsight(table, table_name)
+    # loc = [['Mid'], [2018], ["Spring", "Autumn"], ["KDA"]]
+    # left_loc, top_loc = tableinsight.revision_loc_list(loc)
+    # print(left_loc, top_loc)
+    # input()
+
     # print(tableinsight.table)
     # tableinsight.transform_top(0, 1)
     # print(tableinsight.table)
