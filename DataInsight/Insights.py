@@ -570,7 +570,8 @@ class TableInsight(object):
 
         # Step4: 根据所有得到的最优Correlation的值进行排序，得到最具有Correlation的一部分
         co_list.sort(key=lambda x: x[1][1], reverse=True)
-        print(co_list)
+        # print(co_list)
+        # >>> co_list: [(4, ((2020, 2022), 0.9974068176668717), ...]
         indexs = co_list[0][1][0]
         relation_result = co_list[0][1][1]
         loc = co_list[0][0]
@@ -599,8 +600,11 @@ class TableInsight(object):
         :return:
         """
         print("------------------------Level {}---------------------------".format(i))
-        print(self.data_location(initial_left_loc, initial_top_loc))
+        print(f"left_loc: {initial_left_loc}")
+        print(f"top_loc: {initial_top_loc}")
 
+        print(self.data_location(initial_left_loc, initial_top_loc))
+        input()
         for index in range(len(initial_left_loc)):
             if initial_left_loc[index] != "*":
                 tmp = initial_left_loc[index]
@@ -609,13 +613,13 @@ class TableInsight(object):
                 initial_left_loc[index] = tmp
 
         for index in range(len(initial_top_loc)):
-            if initial_top_loc != "*":
+            if initial_top_loc[index] != "*":
                 tmp = initial_top_loc[index]
                 initial_top_loc[index] = "*"
-                self.explortory_tree(initial_left_loc, initial_top_loc, i=i + 1)
+                self.explortory_tree(initial_left_loc, initial_top_loc, i = i + 1)
                 initial_top_loc[index] = tmp
 
-    def decision_transformation_way(self, rows, columns, left_loc=None, top_loc=None):
+    def decision_transformation_way(self, left_loc, top_loc, rows=None, columns=None):
         """
         根据位置，判定到底使用哪一种transformation的方式
         :param rows:
@@ -624,8 +628,9 @@ class TableInsight(object):
         :param top_loc:
         :return:
         """
-        if left_loc is None or top_loc is None:
-            left_loc, top_loc = self.find_list_by_index_num(rows=rows, columns=columns)
+        if rows is None or columns is None:
+            rows, columns = self.find_index_num_by_loc_list(left_loc=left_loc, top_loc=top_loc)
+            print(f"rows:{rows}, columns:{columns}")
 
         if judge_block_or_single(rows, columns) is True:
             # block 的 Insight 判定， 先合并
