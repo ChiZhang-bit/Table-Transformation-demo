@@ -602,9 +602,7 @@ class TableInsight(object):
         print("------------------------Level {}---------------------------".format(i))
         print(f"left_loc: {initial_left_loc}")
         print(f"top_loc: {initial_top_loc}")
-
         print(self.data_location(initial_left_loc, initial_top_loc))
-        input()
         for index in range(len(initial_left_loc)):
             if initial_left_loc[index] != "*":
                 tmp = initial_left_loc[index]
